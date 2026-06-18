@@ -348,8 +348,8 @@
                 diagBase: "base",
                 quizLabel: "Dynamic Engine Mode",
                 scoreLabel: "Score",
-                correctMsg: "<strong>Correct!</strong> Great job.",
-                wrongMsg: "<strong>Incorrect.</strong> Solution breakdown:",
+                correctMsg: "<strong>Correct! (+5 points)</strong> Great job.",
+                wrongMsg: "<strong>Incorrect. (-2 points)</strong> Solution breakdown:",
                 warningMsg: "<strong>Value Required:</strong> Enter a numerical answer.",
                 nextBtn: "Next Question",
                 checkBtn: "Check Answer",
@@ -380,8 +380,8 @@
                 diagBase: "בסיס",
                 quizLabel: "מצב מחולל שאלות דינמי",
                 scoreLabel: "ציון",
-                correctMsg: "<strong>תשובה נכונה!</strong> כל הכבוד.",
-                wrongMsg: "<strong>תשובה שגויה.</strong> להלן הסבר פתרון מפורט:",
+                correctMsg: "<strong>תשובה נכונה! (5+ נקודות)</strong> כל הכבוד.",
+                wrongMsg: "<strong>תשובה שגויה. (2- נקודות)</strong> להלן הסבר פתרון מפורט:",
                 warningMsg: "<strong>חובה להזין ערך:</strong> אנא הזן תשובה מספרית לפני הבדיקה.",
                 nextBtn: "השאלה הבאה",
                 checkBtn: "בדוק תשובה",
@@ -412,8 +412,8 @@
                 diagBase: "القاعدة",
                 quizLabel: "وضع المحرك الديناميكي",
                 scoreLabel: "النتيجة",
-                correctMsg: "<strong>إجابة صحيحة!</strong> عمل رائع.",
-                wrongMsg: "<strong>إجابة خاطئة.</strong> خطوات الحل:",
+                correctMsg: "<strong>إجابة صحيحة! (+5 نقاط)</strong> عمل رائع.",
+                wrongMsg: "<strong>إجابة خاطئة. (-2 نقاط)</strong> خطوات الحل:",
                 warningMsg: "<strong>مطلوب إدخال قيمة:</strong> يرجى إدخال إجابة رقمية.",
                 nextBtn: "السؤال التالي",
                 checkBtn: "تحقق من الإجابة",
@@ -422,7 +422,7 @@
                 formulaHtml: "المساحة = القاعدة &times; الارتفاع",
                 algebraHeightTemplates: [
                     "تحدي جبري: متوازي أضلاع تبلغ مساحته الإجمالية {a} سم² وله خط قاعدة أفقي يقيس {b} سم. احسب الارتفاع العمودي المجهول (x).",
-                    "هندسة عكسية: إذا كانت مساحة الشكل الداعمة تساوي {a} م² وطول قاعدتها يبلغ {b} أمتار، فأوجد قيمة الارتفاع العمودي (x)."
+                    "هندسة عكسية: إذا كانت مساحة الشكل الداعمة تساوي {a} م² وطول قاعدتها يبلغ {b} أمتار, فأوجد قيمة الارتفاع العمودي (x)."
                 ],
                 algebraBaseTemplates: [
                     "تحدي جبري: يعرض مخطط إنشائي مساحة داخلية إجمالية تبلغ {a} سم². إذا كان ارتفاعه العمودي يقيس {h} سم، فاحسب طول القاعدة المفقودة (x).",
@@ -444,8 +444,8 @@
                 diagBase: "основание",
                 quizLabel: "Режим динамического генератора",
                 scoreLabel: "Счет",
-                correctMsg: "<strong>Верно!</strong> Отличная работа.",
-                wrongMsg: "<strong>Неверно.</strong> Шаги решения:",
+                correctMsg: "<strong>Верно! (+5 очков)</strong> Отличная работа.",
+                wrongMsg: "<strong>Неверно. (-2 очка)</strong> Шаги решения:",
                 warningMsg: "<strong>Требуется значение:</strong> Введите числовой ответ.",
                 nextBtn: "Следующий вопрос",
                 checkBtn: "Проверить ответ",
@@ -471,6 +471,11 @@
         let score = 0;
         let currentQuestion = {};
         let isAnswerChecked = false;
+
+        function updateScoreDisplay() {
+            const data = translations[currentLang];
+            document.getElementById('quiz-score').innerText = `${data.scoreLabel}: ${score}`;
+        }
 
         function changeLanguage(lang) {
             currentLang = lang;
@@ -503,48 +508,57 @@
             document.getElementById('f-formula').innerHTML = data.formulaHtml;
             document.getElementById('quiz-rand-btn').innerText = data.randBtn;
 
-            generateRandomQuestion();
+            // Preserve current question if it exists, otherwise generate a new one
+            if (currentQuestion.text) {
+                document.getElementById('quiz-q-num').innerText = data.quizLabel;
+                updateScoreDisplay();
+                // We re-evaluate text interpolation using templates to preserve state nicely
+                document.getElementById('quiz-prompt').innerText = currentQuestion.text;
+                const btn = document.getElementById('quiz-btn');
+                if (isAnswerChecked) {
+                    btn.innerText = data.nextBtn;
+                } else {
+                    btn.innerText = data.checkBtn;
+                }
+            } else {
+                generateRandomQuestion();
+            }
         }
 
         function generateRandomQuestion() {
             const data = translations[currentLang];
-            
-            // Randomly roll problem profile category type: 
-            // 0 = Find Height (Algebra), 1 = Find Base (Algebra), 2 = Find Area (Standard calculation)
             const mode = Math.floor(Math.random() * 3); 
             
-            let base = parseFloat((Math.random() * 9 + 4).toFixed(1));   // 4.0 to 13.0
-            let height = parseFloat((Math.random() * 6 + 3).toFixed(1)); // 3.0 to 9.0
+            let base = parseFloat((Math.random() * 9 + 4).toFixed(1));
+            let height = parseFloat((Math.random() * 6 + 3).toFixed(1));
             let area = parseFloat((base * height).toFixed(2));
             
             let templateText = "";
             let expectedAnswer = 0;
             let svgTypeCode = ""; 
 
-            if (mode === 0) { // Algebra: Find Height
+            if (mode === 0) {
                 const idx = Math.floor(Math.random() * data.algebraHeightTemplates.length);
                 templateText = data.algebraHeightTemplates[idx];
                 expectedAnswer = height;
                 svgTypeCode = "find_h";
-            } else if (mode === 1) { // Algebra: Find Base
+            } else if (mode === 1) {
                 const idx = Math.floor(Math.random() * data.algebraBaseTemplates.length);
                 templateText = data.algebraBaseTemplates[idx];
                 expectedAnswer = base;
                 svgTypeCode = "find_b";
-            } else { // Standard computation: Find Area
+            } else {
                 const idx = Math.floor(Math.random() * data.standardTemplates.length);
                 templateText = data.standardTemplates[idx];
                 expectedAnswer = area;
                 svgTypeCode = "find_a";
             }
 
-            // Interpolate dynamic numbers into template slots
             let questionString = templateText
                 .replace("{b}", base)
                 .replace("{h}", height)
                 .replace("{a}", area);
 
-            // Create contextual solutions steps strings
             let stepText = "";
             if (mode === 0) {
                 stepText = currentLang === 'he' ? `גובה (x) = שטח ÷ בסיס = ${area} ÷ ${base} = ${height} ס"מ` : `Height (x) = Area ÷ Base = ${area} ÷ ${base} = ${height}`;
@@ -567,7 +581,7 @@
             isAnswerChecked = false;
             
             document.getElementById('quiz-q-num').innerText = data.quizLabel;
-            document.getElementById('quiz-score').innerText = `${data.scoreLabel}: ${score}`;
+            updateScoreDisplay();
             document.getElementById('quiz-prompt').innerText = currentQuestion.text;
             document.getElementById('dynamic-svg-holder').innerHTML = buildDynamicSVG(currentQuestion.type, currentQuestion.b, currentQuestion.h, currentQuestion.a);
             
@@ -584,7 +598,6 @@
 
         function buildDynamicSVG(type, b, h, a) {
             const isRtl = translations[currentLang].direction === 'rtl';
-            
             let heightLabel = `${isRtl ? "גובה" : "h"} = ${h}`;
             let baseLabel = `${isRtl ? "בסיס" : "b"} = ${b}`;
             let areaLabel = "";
@@ -631,16 +644,18 @@
 
             const userAns = parseFloat(rawValue);
 
-            // Using 0.05 margin tolerance to accommodate floating decimal conversions comfortably
             if (!isNaN(userAns) && Math.abs(userAns - currentQuestion.ans) < 0.05) {
                 feedback.className = "feedback-msg feedback-correct";
                 feedback.innerHTML = `${data.correctMsg} <div class="explanation-text">${currentQuestion.exp}</div>`;
-                score += 5;
-                document.getElementById('quiz-score').innerText = `${data.scoreLabel}: ${score}`;
+                score += 5; // Increase score instantly
             } else {
                 feedback.className = "feedback-msg feedback-wrong";
                 feedback.innerHTML = `${data.wrongMsg} <div class="explanation-text">${currentQuestion.exp}</div>`;
+                score = Math.max(0, score - 2); // Apply live wrong answer penalty, baseline at 0
             }
+
+            // Immediately update display right after checking answer
+            updateScoreDisplay();
 
             input.disabled = true;
             isAnswerChecked = true;
